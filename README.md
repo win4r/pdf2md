@@ -8,6 +8,7 @@
 - 使用 Gemini 2.5 Flash OCR API 从图像中提取文本
 - 将提取的文本转换为结构化的 Markdown
 - 简单的命令行界面
+- 基于 Web 的用户界面
 
 ## 系统要求
 
@@ -43,6 +44,28 @@ python -m pdf2md.cli --input 输入文件.pdf --output 输出文件.md
 - `--output`：输出 Markdown 文件的路径（可选，默认为输入文件名加 .md 扩展名）
 - `--dpi`：图像转换的 DPI（可选，默认：300）
 - `--format`：转换的图像格式（可选，默认：png）
+
+## Web 应用使用方法
+
+本项目还包含一个基于 Web 的 PDF 转 Markdown 用户界面。
+
+1.  **确保所有依赖都已安装：**
+    ```bash
+    pip install -r requirements.txt
+    ```
+    (如果您尚未安装 Poppler 或设置 Gemini API 密钥，请参照上述主要安装说明进行操作。)
+
+2.  **运行 Flask 应用：**
+    ```bash
+    python app.py
+    ```
+    应用通常会在您的网络浏览器中的 `http://127.0.0.1:5000/` 地址可用。
+
+3.  **使用 Web UI：**
+    - 在浏览器中打开该 URL。
+    - 点击“选择文件”按钮选择一个 PDF 文件。
+    - 点击“上传并转换”。
+    - 转换后的 Markdown 文本将显示在结果页面上。
 
 ## 开发路线图
 

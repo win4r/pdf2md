@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Conversion Result - {{ filename }}</title>
+    <style>
+      body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+      .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+      h1 { color: #333; }
+      pre { background-color: #eee; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
+      a { color: #007bff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Conversion Result for {{ filename }}</h1>
+      <h2>Markdown Output:</h2>
+      <pre>{{ markdown_content }}</pre>
+      <p><a href="{{ url_for('index') }}">Convert another file</a></p>
+    </div>
+  </body>
+</html>
