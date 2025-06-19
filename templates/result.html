@@ -2,23 +2,96 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conversion Result - {{ filename }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
     <style>
-      body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-      .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-      h1 { color: #333; }
-      pre { background-color: #eee; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
-      a { color: #007bff; text-decoration: none; }
-      a:hover { text-decoration: underline; }
+      /* Basic styling for rendered HTML from Markdown */
+      .prose h1 { @apply text-2xl font-bold mb-4; }
+      .prose h2 { @apply text-xl font-semibold mb-3; }
+      .prose h3 { @apply text-lg font-semibold mb-2; }
+      .prose p { @apply mb-4; }
+      .prose ul { @apply list-disc list-inside mb-4; }
+      .prose ol { @apply list-decimal list-inside mb-4; }
+      .prose li { @apply mb-1; }
+      .prose pre { @apply bg-gray-800 text-white p-4 rounded-md overflow-x-auto mb-4; }
+      .prose code:not(pre > code) { @apply bg-gray-200 text-red-600 px-1 rounded; }
+      .prose blockquote { @apply border-l-4 border-gray-300 pl-4 italic my-4; }
+      .prose a { @apply text-blue-600 hover:underline; }
     </style>
   </head>
-  <body>
-    <div class="container">
-      <h1>Conversion Result for {{ filename }}</h1>
-      <h2>Markdown Output:</h2>
-      <pre>{{ markdown_content }}</pre>
-      <p><a href="{{ url_for('index') }}">Convert another file</a></p>
+  <body class="bg-gray-100 py-8">
+    <div class="container mx-auto max-w-3xl p-6 bg-white rounded-xl shadow-2xl"
+         x-data="markdownResult()">
+
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">Conversion Result for <span class="text-blue-600">{{ filename }}</span></h1>
+
+      <div class="mb-6">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-3">Markdown Output:</h2>
+        <div class="relative">
+          <!-- Hidden textarea for copying -->
+          <textarea x-ref="markdownSource" class="sr-only">{{ markdown_content }}</textarea>
+
+          <!-- Container for rendered HTML -->
+          <div x-html="renderedMarkdown" class="prose max-w-none p-4 border border-gray-200 rounded-md shadow-inner bg-gray-50 min-h-[200px] max-h-[60vh] overflow-y-auto">
+            <!-- Rendered HTML will appear here -->
+          </div>
+
+          <button @click="copyToClipboard"
+                  class="absolute top-2 right-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-3 rounded-md text-xs">
+            <span x-text="copyButtonText"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row sm:justify-between items-center mt-8 space-y-4 sm:space-y-0">
+        <a href="{{ url_for('index') }}" class="w-full sm:w-auto text-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+          Convert Another File
+        </a>
+        <button @click="downloadMarkdown" class="w-full sm:w-auto py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75">
+          Download .md File
+        </button>
+      </div>
     </div>
+
+    <script>
+      function markdownResult() {
+        return {
+          rawMarkdown: '', // Will be populated from textarea
+          renderedMarkdown: '',
+          copyButtonText: 'Copy',
+          init() {
+            this.rawMarkdown = this.$refs.markdownSource.value;
+            this.renderedMarkdown = marked.parse(this.rawMarkdown);
+          },
+          copyToClipboard() {
+            navigator.clipboard.writeText(this.rawMarkdown).then(() => {
+              this.copyButtonText = 'Copied!';
+              setTimeout(() => { this.copyButtonText = 'Copy'; }, 2000);
+            }).catch(err => {
+              console.error('Failed to copy: ', err);
+              this.copyButtonText = 'Error';
+              setTimeout(() => { this.copyButtonText = 'Copy'; }, 2000);
+            });
+          },
+          downloadMarkdown() {
+            const blob = new Blob([this.rawMarkdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            // Generate a filename from the original PDF filename
+            let originalFilename = "{{ filename }}";
+            let baseFilename = originalFilename.substring(0, originalFilename.lastIndexOf('.')) || originalFilename;
+            a.download = baseFilename + '.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }
+        }
+      }
+    </script>
   </body>
 </html>

@@ -2,24 +2,100 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF to Markdown Converter</title>
-    <style>
-      body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-      .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-      h1 { color: #333; }
-      input[type="file"] { margin-bottom: 10px; }
-      input[type="submit"] { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-      input[type="submit"]:hover { background-color: #0056b3; }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
   </head>
-  <body>
-    <div class="container">
-      <h1>PDF to Markdown Converter</h1>
-      <form method="post" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
-        <p><input type="file" name="file" accept=".pdf"></p>
-        <p><input type="submit" value="Upload and Convert"></p>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md" x-data="fileUpload()">
+      <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">PDF to Markdown Converter</h1>
+
+      <!-- Error Message Display -->
+      {% if error_message %}
+      <div x-data="{ showBanner: true }" x-show="showBanner"
+           class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow" role="alert">
+        <div class="flex">
+          <div class="py-1"><svg class="fill-current h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zM10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm-1-5a1 1 0 0 1 1-1h2a1 1 0 0 1 0 2h-2a1 1 0 0 1-1-1zm0-4a1 1 0 0 1 1-1h2a1 1 0 1 1 0 2h-2a1 1 0 0 1-1-1z"/></svg></div>
+          <div>
+            <p class="font-bold">Error</p>
+            <p class="text-sm">{{ error_message }}</p>
+          </div>
+          <button @click="showBanner = false" class="ml-auto -mx-1.5 -my-1.5 bg-red-100 text-red-500 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-200 inline-flex h-8 w-8" aria-label="Dismiss">
+            <span class="sr-only">Dismiss</span>
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="space-y-6" @submit="isProcessing = true">
+        <div>
+          <label for="file-upload" class="block text-sm font-medium text-gray-700 mb-1">Select PDF file:</label>
+          <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors duration-150 ease-in-out"
+               :class="{'border-blue-500 bg-blue-50': dragging, 'border-gray-300 hover:border-gray-400': !dragging}"
+               @dragenter.prevent="dragging = true"
+               @dragover.prevent="dragging = true"
+               @dragleave.prevent="dragging = false"
+               @drop.prevent="handleDrop">
+            <div class="space-y-1 text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" :class="{'text-blue-500': dragging}" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <div class="flex text-sm text-gray-600">
+                <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                  <span>Upload a file</span>
+                  <input id="file-upload" name="file" type="file" class="sr-only" @change="handleFileChange" accept=".pdf" required>
+                </label>
+                <p class="pl-1">or drag and drop</p>
+              </div>
+              <p class="text-xs text-gray-500">PDF up to 10MB (example)</p>
+            </div>
+          </div>
+          <template x-if="fileName">
+            <p class="text-sm text-gray-600 mt-2">Selected file: <span x-text="fileName" class="font-semibold"></span></p>
+          </template>
+        </div>
+
+        <div>
+          <button type="submit"
+                  :disabled="isProcessing"
+                  :class="{'opacity-50 cursor-not-allowed': isProcessing}"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg x-show="isProcessing" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span x-text="isProcessing ? 'Processing...' : 'Upload and Convert'"></span>
+          </button>
+        </div>
       </form>
     </div>
+
+    <script>
+      function fileUpload() {
+        return {
+          fileName: '',
+          isProcessing: false,
+          dragging: false,
+          handleFileChange(event) {
+            if (event.target.files.length > 0) {
+              this.fileName = event.target.files[0].name;
+            } else {
+              this.fileName = '';
+            }
+          },
+          handleDrop(event) {
+            this.dragging = false;
+            if (event.dataTransfer.files.length > 0) {
+              const dataTransfer = new DataTransfer();
+              dataTransfer.items.add(event.dataTransfer.files[0]);
+              document.getElementById('file-upload').files = dataTransfer.files;
+              this.fileName = event.dataTransfer.files[0].name;
+            }
+          }
+        }
+      }
+    </script>
   </body>
 </html>
